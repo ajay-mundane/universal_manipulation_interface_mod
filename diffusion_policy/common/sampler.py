@@ -34,10 +34,11 @@ class SequenceSampler:
     ):
         episode_ends = replay_buffer.episode_ends[:]
 
+        # NOTE: reenable if we want data augmentation for gripper open frames
         # load gripper_width
-        gripper_width = replay_buffer['robot0_gripper_width'][:, 0]
-        gripper_width_threshold = 0.08
-        self.repeat_frame_prob = repeat_frame_prob
+        # gripper_width = replay_buffer['robot0_gripper_width'][:, 0]
+        # gripper_width_threshold = 0.08
+        # self.repeat_frame_prob = repeat_frame_prob
 
         # create indices, including (current_idx, start_idx, end_idx)
         indices = list()
@@ -53,8 +54,8 @@ class SequenceSampler:
             for current_idx in range(start_idx, end_idx):
                 if not action_padding and end_idx < current_idx + (key_horizon['action'] - 1) * key_down_sample_steps['action'] + 1:
                     continue
-                if gripper_width[current_idx] < gripper_width_threshold:
-                    before_first_grasp = False
+                # if gripper_width[current_idx] < gripper_width_threshold:
+                #     before_first_grasp = False
                 indices.append((current_idx, start_idx, end_idx, before_first_grasp))
         
         # load low_dim to memory and keep rgb as compressed zarr array
@@ -64,7 +65,9 @@ class SequenceSampler:
             if key.endswith('eef_pos'):
                 self.num_robot += 1
 
-            if key.endswith('pos_abs'):
+            if key.endswith('action'):
+                self.replay_buffer[key] = replay_buffer['action'][:]
+            elif key.endswith('pos_abs'):
                 axis = shape_meta['obs'][key]['axis']
                 if isinstance(axis, int):
                     axis = [axis]
@@ -177,10 +180,10 @@ class SequenceSampler:
             result[key] = output
 
         # repeat frame before first grasp
-        if self.repeat_frame_prob != 0.0:
-            if before_first_grasp and random.random() < self.repeat_frame_prob:
-                for key in obs_keys:
-                    result[key][:-1] = result[key][-1:]
+        # if self.repeat_frame_prob != 0.0:
+        #     if before_first_grasp and random.random() < self.repeat_frame_prob:
+        #         for key in obs_keys:
+        #             result[key][:-1] = result[key][-1:]
 
         # aciton
         input_arr = self.replay_buffer['action']

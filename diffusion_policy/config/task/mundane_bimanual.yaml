@@ -1,0 +1,99 @@
+name: mundane_bimanual
+
+camera_obs_latency: 0.0  # aligned, may not be needed
+robot_obs_latency: 0.0   # aligned, may not be needed
+gripper_obs_latency: 0.0 # aligned, may not be needed
+dataset_frequeny: 0 # 59.94
+obs_down_sample_steps: 1 # maybe needed? keeping at 1 for now
+
+low_dim_obs_horizon: 2
+img_obs_horizon: 2
+action_horizon: 16
+ignore_proprioception: False
+
+shape_meta: &shape_meta
+  # acceptable types: rgb, depth, low_dim
+  obs:
+    # Camera 0 - RGB and Depth
+    camera0_rgb:
+      shape: [3, 224, 224]
+      horizon: ${task.img_obs_horizon} # int
+      latency_steps: 0 # float - aligned data
+      down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+      type: rgb
+      ignore_by_policy: False
+    # camera0_depth:
+    #   shape: [1, 224, 224]
+    #   horizon: ${task.img_obs_horizon} # int
+    #   latency_steps: 0 # float - aligned data
+    #   down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+    #   type: depth
+    #   ignore_by_policy: False
+    
+    # Camera 1 - RGB and Depth
+    camera1_rgb:
+      shape: [3, 224, 224]
+      horizon: ${task.img_obs_horizon} # int
+      latency_steps: 0 # float - aligned data
+      down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+      type: rgb
+      ignore_by_policy: False
+    # camera1_depth:
+    #   shape: [1, 224, 224]
+    #   horizon: ${task.img_obs_horizon} # int
+    #   latency_steps: 0 # float - aligned data
+    #   down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+    #   type: depth
+    #   ignore_by_policy: False
+    
+    # Camera 2 - RGB and Depth
+    camera2_rgb:
+      shape: [3, 224, 224]
+      horizon: ${task.img_obs_horizon} # int
+      latency_steps: 0 # float - aligned data
+      down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+      type: rgb
+      ignore_by_policy: False
+    # camera2_depth:
+    #   shape: [1, 224, 224]
+    #   horizon: ${task.img_obs_horizon} # int
+    #   latency_steps: 0 # float - aligned data
+    #   down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+    #   type: depth
+    #   ignore_by_policy: False
+    
+    # Robot 0 - 7 DOF joint positions
+    robots_joint_action:
+      shape: [14]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: 0 # float - aligned data
+      down_sample_steps: ${task.obs_down_sample_steps} # float - maybe needed?
+      type: low_dim
+      ignore_by_policy: ${task.ignore_proprioception}
+
+  action: 
+    shape: [14]  # 7 DOF per robot * 2 robots = 14 total
+    horizon: ${task.action_horizon}
+    latency_steps: 0 # float - aligned data
+    down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+
+task_name: &task_name mundane_bimanual
+dataset_path: &dataset_path /home/ajay/Documents/arx5-sdk/python/data/replay_buffer.zarr
+pose_repr: &pose_repr
+  obs_pose_repr: relative # abs or rel
+  action_pose_repr: relative # abs or rel or delta
+
+env_runner:
+  _target_: diffusion_policy.env_runner.real_pusht_image_runner.RealPushTImageRunner
+
+dataset:
+  _target_: diffusion_policy.dataset.mundane_dataset.MundaneDataset
+  shape_meta: *shape_meta
+  dataset_path: *dataset_path
+  cache_dir: null
+  pose_repr: *pose_repr
+  action_padding: False
+  temporally_independent_normalization: False
+  repeat_frame_prob: 0.0
+  seed: 42
+  val_ratio: 0.05

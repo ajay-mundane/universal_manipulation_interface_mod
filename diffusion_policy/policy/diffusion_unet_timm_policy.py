@@ -171,7 +171,6 @@ class DiffusionUnetTimmPolicy(BaseImagePolicy):
         assert 'valid_mask' not in batch
         nobs = self.normalizer.normalize(batch['obs'])
         nactions = self.normalizer['action'].normalize(batch['action'])
-        
         assert self.obs_as_global_cond
         global_cond = self.obs_encoder(nobs)
 

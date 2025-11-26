@@ -143,8 +143,29 @@ class TimmObsEncoder(ModuleAttrMixin):
                 torchvision.transforms.RandomCrop(size=int(image_shape[0] * ratio)),
                 torchvision.transforms.Resize(size=image_shape[0], antialias=True)
             ] + transforms[1:]
-        transform = nn.Identity() if transforms is None else torch.nn.Sequential(*transforms)
-
+        
+        # Add CLIP normalization if using pretrained models and imagenet_norm is enabled
+        if imagenet_norm and pretrained:
+            OPENAI_CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
+            OPENAI_CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
+            
+            # Get model-specific normalization stats
+            if hasattr(model, 'pretrained_cfg') and model.pretrained_cfg is not None:
+                mean = model.pretrained_cfg.get('mean', OPENAI_CLIP_MEAN)
+                std = model.pretrained_cfg.get('std', OPENAI_CLIP_STD)
+            else:
+                mean = OPENAI_CLIP_MEAN
+                std = OPENAI_CLIP_STD
+            
+            normalize_transform = torchvision.transforms.Normalize(mean=mean, std=std)
+            
+            if transforms is None:
+                transform = normalize_transform
+            else:
+                transform = torch.nn.Sequential(*transforms, normalize_transform)
+        else:
+            transform = nn.Identity() if transforms is None else torch.nn.Sequential(*transforms)
+        print(transform)
         for key, attr in obs_shape_meta.items():
             shape = tuple(attr['shape'])
             type = attr.get('type', 'low_dim')
@@ -261,9 +282,9 @@ class TimmObsEncoder(ModuleAttrMixin):
             img = obs_dict[key]
             B, T = img.shape[:2]
             assert B == batch_size
-            assert img.shape[2:] == self.key_shape_map[key]
             img = img.reshape(B*T, *img.shape[2:])
             img = self.key_transform_map[key](img)
+            assert img.shape[1:] == self.key_shape_map[key]
             raw_feature = self.key_model_map[key](img)
             feature = self.aggregate_feature(raw_feature)
             assert len(feature.shape) == 2 and feature.shape[0] == B * T
