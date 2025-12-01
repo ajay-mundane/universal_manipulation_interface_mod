@@ -75,10 +75,20 @@ class MundaneDataset(BaseDataset):
                         with zarr.LMDBStore(str(cache_path),     
                             writemap=True, metasync=False, sync=False, map_async=True, lock=False
                             ) as lmdb_store:
-                            with zarr.ZipStore(dataset_path, mode='r') as zip_store:
-                                print(f"Copying data to {str(cache_path)}")
+                            # Handle both zarr directories and zip files
+                            if dataset_path.endswith('.zip'):
+                                with zarr.ZipStore(dataset_path, mode='r') as zip_store:
+                                    print(f"Copying data from zip to {str(cache_path)}")
+                                    ReplayBuffer.copy_from_store(
+                                        src_store=zip_store,
+                                        store=lmdb_store
+                                    )
+                            else:
+                                # Handle zarr directories
+                                src_group = zarr.open_group(dataset_path, mode='r')
+                                print(f"Copying data from directory to {str(cache_path)}")
                                 ReplayBuffer.copy_from_store(
-                                    src_store=zip_store,
+                                    src_store=src_group.store,
                                     store=lmdb_store
                                 )
                         print("Cache written to disk!")
@@ -194,8 +204,8 @@ class MundaneDataset(BaseDataset):
         self.sampler.ignore_rgb(True)
         dataloader = torch.utils.data.DataLoader(
             dataset=self,
-            batch_size=64,
-            num_workers=32,
+            batch_size=16,
+            num_workers=4,
         )
         for batch in tqdm(dataloader, desc='iterating dataset to get normalization'):
             for key in self.lowdim_keys:

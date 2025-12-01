@@ -4,7 +4,7 @@ camera_obs_latency: 0.0  # aligned, may not be needed
 robot_obs_latency: 0.0   # aligned, may not be needed
 gripper_obs_latency: 0.0 # aligned, may not be needed
 dataset_frequeny: 0 # 59.94
-obs_down_sample_steps: 1 # maybe needed? keeping at 1 for now
+obs_down_sample_steps: 3 # maybe needed? keeping at 1 for now
 
 low_dim_obs_horizon: 2
 img_obs_horizon: 2
@@ -54,6 +54,22 @@ shape_meta: &shape_meta
       down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
       type: rgb
       ignore_by_policy: False
+
+    camera3_rgb:
+      shape: [3, 224, 224]
+      horizon: ${task.img_obs_horizon} # int
+      latency_steps: 0 # float - aligned data
+      down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+      type: rgb
+      ignore_by_policy: False
+    
+    camera4_rgb:
+      shape: [3, 224, 224]
+      horizon: ${task.img_obs_horizon} # int
+      latency_steps: 0 # float - aligned data
+      down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
+      type: rgb
+      ignore_by_policy: False
     # camera2_depth:
     #   shape: [1, 224, 224]
     #   horizon: ${task.img_obs_horizon} # int
@@ -78,7 +94,7 @@ shape_meta: &shape_meta
     down_sample_steps: ${task.obs_down_sample_steps} # int - maybe needed?
 
 task_name: &task_name mundane_bimanual
-dataset_path: &dataset_path /home/ajay/Documents/arx5-sdk/python/data/replay_buffer.zarr
+dataset_path: &dataset_path /home/ajay/Documents/arx5-sdk/python/data_real/replay_buffer.zarr
 pose_repr: &pose_repr
   obs_pose_repr: relative # abs or rel
   action_pose_repr: relative # abs or rel or delta
@@ -90,7 +106,7 @@ dataset:
   _target_: diffusion_policy.dataset.mundane_dataset.MundaneDataset
   shape_meta: *shape_meta
   dataset_path: *dataset_path
-  cache_dir: null
+  cache_dir: "~/.cache/mundane_datasets"
   pose_repr: *pose_repr
   action_padding: False
   temporally_independent_normalization: False

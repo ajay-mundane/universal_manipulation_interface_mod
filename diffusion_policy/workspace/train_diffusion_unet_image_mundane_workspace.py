@@ -269,10 +269,10 @@ class TrainDiffusionUnetImageMundaneWorkspace(BaseWorkspace):
                 step_log['train_loss'] = train_loss
 
                 # ========= eval for this epoch ==========
-                policy = accelerator.unwrap_model(self.model)
-                if cfg.training.use_ema:
-                    policy = self.ema_model
-                policy.eval()
+                # policy = accelerator.unwrap_model(self.model)
+                # if cfg.training.use_ema:
+                #     policy = self.ema_model
+                # policy.eval()
 
                 # skip rollout for training-only setup
                 # if (self.epoch % cfg.training.rollout_every) == 0:
@@ -315,24 +315,24 @@ class TrainDiffusionUnetImageMundaneWorkspace(BaseWorkspace):
                     step_log[f'{category}_action_mse_error_gripper'] = torch.nn.functional.mse_loss(pred_action[..., 6], gt_action[..., 6])
                     
                 # run diffusion sampling on a training batch
-                if (self.epoch % cfg.training.sample_every) == 0 and accelerator.is_main_process:
-                    with torch.no_grad():
-                        # sample trajectory from training set, and evaluate difference
-                        batch = dict_apply(train_sampling_batch, lambda x: x.to(device, non_blocking=True))
-                        gt_action = batch['action']
-                        pred_action = policy.predict_action(batch['obs'], None)['action_pred']
-                        log_action_mse(step_log, 'train', pred_action, gt_action)
+                # if (self.epoch % cfg.training.sample_every) == 0 and accelerator.is_main_process:
+                #     with torch.no_grad():
+                #         # sample trajectory from training set, and evaluate difference
+                #         batch = dict_apply(train_sampling_batch, lambda x: x.to(device, non_blocking=True))
+                #         gt_action = batch['action']
+                #         pred_action = policy.predict_action(batch['obs'], None)['action_pred']
+                #         log_action_mse(step_log, 'train', pred_action, gt_action)
 
-                        if len(val_dataloader) > 0:
-                            val_sampling_batch = next(iter(val_dataloader))
-                            batch = dict_apply(val_sampling_batch, lambda x: x.to(device, non_blocking=True))
-                            gt_action = batch['action']
-                            pred_action = policy.predict_action(batch['obs'], None)['action_pred']
-                            log_action_mse(step_log, 'val', pred_action, gt_action)
+                #         if len(val_dataloader) > 0:
+                #             val_sampling_batch = next(iter(val_dataloader))
+                #             batch = dict_apply(val_sampling_batch, lambda x: x.to(device, non_blocking=True))
+                #             gt_action = batch['action']
+                #             pred_action = policy.predict_action(batch['obs'], None)['action_pred']
+                #             log_action_mse(step_log, 'val', pred_action, gt_action)
 
-                        del batch
-                        del gt_action
-                        del pred_action
+                #         del batch
+                #         del gt_action
+                #         del pred_action
                 
                 # checkpoint
                 if (self.epoch % cfg.training.checkpoint_every) == 0 and accelerator.is_main_process:
